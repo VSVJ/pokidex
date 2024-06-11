@@ -8,37 +8,44 @@ import pokidex from "../images/pokidex_1.png";
 const DetailedView = () => {
   const { pokemonName } = useParams();
   const [pokemon, setPokemon] = useState(null);
+  const [inputString, setInputString] = useState("");
 
   useEffect(() => {
-    // Fetch data for the Pokémon with the given name
-    fetch(`https://pokeapi.co/api/v2/pokemon/${pokemonName}`)
-      .then((response) => response.json())
-      .then((data) => {
-        setPokemon(data);
-  
-        // Fetch species data to get flavor text entries
-        fetch(data.species.url)
-          .then((response) => response.json())
-          .then((speciesData) => {
-            // Filter flavor text entries in English
-            const flavorTextEntries = speciesData.flavor_text_entries.filter(
-              (entry) => entry.language.name === "en"
-            );
-  
-            // Select a random flavor text entry
-            const randomEntry = flavorTextEntries[Math.floor(Math.random() * flavorTextEntries.length)];
-  
-            // Convert the text to speech
-            const primaryType = data.types[0].type.name;
-            const text = `${data.name} is a ${primaryType} type Pokémon. It has a height of ${data.height} and a weight of ${data.weight}. Flavor text: ${randomEntry.flavor_text}`;
-            convertTextToSpeech(text);
-          })
-          .catch((error) => console.error("Error fetching species data:", error));
-      })
-      .catch((error) => console.error("Error fetching Pokémon data:", error));
+    let isMounted = true;
+
+    const fetchPokemonData = async () => {
+      try {
+        const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokemonName}`);
+        const data = await response.json();
+
+        if (isMounted) {
+          setPokemon(data);
+
+          const speciesResponse = await fetch(data.species.url);
+          const speciesData = await speciesResponse.json();
+
+          const flavorTextEntries = speciesData.flavor_text_entries.filter(
+            (entry) => entry.language.name === 'en'
+          );
+
+          const randomEntry = flavorTextEntries[Math.floor(Math.random() * flavorTextEntries.length)];
+
+          const primaryType = data.types[0].type.name;
+          const text = `${data.name} is a ${primaryType} type Pokémon. ${randomEntry.flavor_text}`;
+
+          convertTextToSpeech(text);
+        }
+      } catch (error) {
+        console.error('Error fetching Pokémon data:', error);
+      }
+    };
+
+    fetchPokemonData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [pokemonName]);
-  
-  const [inputString, setInputString] = useState("");
 
   const convertTextToSpeech = async (text) => {
     try {
@@ -55,9 +62,8 @@ const DetailedView = () => {
     }
   };
 
-  // Use useCallback to memoize the debounced function
   const debouncedConvertTextToSpeech = useCallback(
-    debounce(convertTextToSpeech, 10),
+    debounce(convertTextToSpeech, 1000),
     []
   );
 
@@ -71,34 +77,34 @@ const DetailedView = () => {
 
   return (
     <div className="detailed-view">
-      <div class="container">
+      <div className="container">
         {/* <img src={pokidex} alt="pokidex" className="pokemon-image" /> */}
-        <div class="pokedex">
-          <div class="circle-button"></div>
-          <div class="lights">
-            <div class="light red-light"></div>
-            <div class="light yellow-light"></div>
-            <div class="light green-light"></div>
+        <div className="pokedex">
+          <div className="circle-button"></div>
+          <div className="lights">
+            <div className="light red-light"></div>
+            <div className="light yellow-light"></div>
+            <div className="light green-light"></div>
           </div>
-          <div class="screen"></div>
-          <div class="red-button"></div>
-          <div class="black-button"></div>
-          <div class="slits">
-            <div class="slit"></div>
-            <div class="slit"></div>
+          <div className="screen"></div>
+          <div className="red-button"></div>
+          <div className="black-button"></div>
+          <div className="slits">
+            <div className="slit"></div>
+            <div className="slit"></div>
           </div>
-          <div class="green-area"></div>
-          <div class="control-pad">
-            <div class="control-button up"></div>
-            <div class="control-button down"></div>
-            <div class="control-button left"></div>
-            <div class="control-button right"></div>
+          <div className="green-area"></div>
+          <div className="control-pad">
+            <div className="control-button up"></div>
+            <div className="control-button down"></div>
+            <div className="control-button left"></div>
+            <div className="control-button right"></div>
           </div>
         </div>
         <img
           src={pokemon.sprites.other.showdown.front_default}
           alt={pokemon.name}
-          class="top-image"
+          className="top-image"
         />
       </div>
       <h2>{pokemon.name}</h2>
